@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.Repository.BookRepository;
+import com.example.demo.Service.BookService;
 import com.example.demo.Vo.Book;
 import com.example.demo.Vo.Result;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,14 +17,15 @@ import java.util.List;
 
 public class BookController {
     @Autowired
-    private BookRepository bookRepository;
+    private BookService bookService;
 
-    @GetMapping("/SearchByKind")
+    @PostMapping("/SearchByKind")
 //    @RequestParam("kind") String kind
-    public Result SearchByKind() throws ServletException {
+    public Result SearchByKind(@RequestParam("kind") String kind) throws ServletException {
         List<Book> bookList=null;
+        System.out.println(kind);
         try{
-            bookList=bookRepository.findAllByKind("科学");
+            bookList=bookService.findByKind(kind);
         }
         catch (Exception e)
         {
@@ -32,11 +34,11 @@ public class BookController {
         return new Result(bookList);
     }
 
-    @PostMapping("/DeleteById")
+    @DeleteMapping("/DeleteById")
      public Result DeleteById(@RequestParam("id") int id) throws ServletException
     {
         try{
-            bookRepository.deleteById(id);
+            bookService.deleteById(id);
         }
         catch (Exception e)
         {
@@ -50,7 +52,7 @@ public class BookController {
     {
         Book book;
         try{
-            book=bookRepository.findBookById(id);
+            book=bookService.findById(id);
             if(book==null)
                 throw new ServletException("该书不存在");
         }
@@ -65,7 +67,7 @@ public class BookController {
     public Result SearchByName(@RequestParam("name") String name) throws ServletException {
         List<Book> bookList=null;
         try{
-            bookList=bookRepository.findBooksByNameLike("%"+name+"%");
+            bookList=bookService.findByName(name);
         }
         catch (Exception e)
         {
@@ -78,7 +80,7 @@ public class BookController {
     public Result SearchAllBook() throws ServletException {
         List<Book> bookList=null;
         try{
-            bookList=bookRepository.findAll();
+            bookList=bookService.findAll();
         }
         catch (Exception e)
         {
