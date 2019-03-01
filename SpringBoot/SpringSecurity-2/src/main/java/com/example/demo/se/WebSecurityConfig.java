@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.util.DigestUtils;
 
 @Configuration
 @EnableWebSecurity
@@ -22,18 +23,19 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private CustomUserDetailsService userDetailsService;
 
+    @Autowired
+    AjaxSessionInformationExpiredStrategy ajaxSessionInformationExpiredStrategy;
+
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(userDetailsService).passwordEncoder(new PasswordEncoder() {
             @Override
             public String encode(CharSequence charSequence) {
-                System.out.println(charSequence.toString());
-                return charSequence.toString();
+                return DigestUtils.md5DigestAsHex(charSequence.toString().getBytes());
             }
-
             @Override
             public boolean matches(CharSequence charSequence, String s) {
-                return s.equals(charSequence.toString());
+                return s.equals(DigestUtils.md5DigestAsHex(charSequence.toString().getBytes()));
             }
         });
     }
@@ -62,7 +64,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http
             .authorizeRequests()
-                .antMatchers("/", "/home").permitAll()
+                .antMatchers("/", "/register","/timeout").permitAll()
                 .anyRequest().authenticated()
                 .and()
             .formLogin()
@@ -73,8 +75,14 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
             .logout()
                 .permitAll();
+        http.sessionManagement().invalidSessionUrl("/timeout")
+                .and().sessionManagement().maximumSessions(1)
+                /**
+                 * 自定义session过期策略，替代默认的{@link ConcurrentSessionFilter.ResponseBodySessionInformationExpiredStrategy}，
+                 * 复写onExpiredSessionDetected方法，默认方法只输出异常，没业务逻辑。这里需要返回json
+                 */
+                .expiredSessionStrategy(ajaxSessionInformationExpiredStrategy);
         http.csrf().disable();
-
     }
 //
 //    @Autowired
